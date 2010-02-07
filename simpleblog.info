@@ -1,0 +1,6 @@
+; $Id$
+name = Simple Blog
+version = 6.x-1.0-dev
+description = Simple Blogging Form
+core = 6.x
+package = "AADL Modules"

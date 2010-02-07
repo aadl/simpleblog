@@ -1,0 +1,77 @@
+<?php
+function simpleblog_perm() {
+  return array('access simpleblog', 'administer simpleblog');
+}
+
+function simpleblog_menu() {
+  $items = array();
+
+  $items['admin/settings/simpleblog'] = array(
+    'title' => 'Simpleblog settings',
+    'description' => 'Configure Simpleblog Options.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simpleblog_admin'),
+    'access arguments' => array('administer simpleblog'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+function simpleblog_admin() {
+  $term_list = array();
+  $vocabs = taxonomy_get_vocabularies('story');
+  foreach ($vocabs as  $vid => $vocab) {
+    $tree = taxonomy_get_tree($vid);
+    foreach ($tree as $term) {
+      $term_list[$term->tid] = $vocab->name . ' :: ' . $term->name;
+    }
+  }
+
+  $form['simpleblog_suppress_terms'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('SUPPRESS the following Taxonomy terms in the Simpleblog form'),
+    '#options' => $term_list,
+    '#default_value' => variable_get('simpleblog_suppress_terms', array()),
+  );
+  return system_settings_form($form);
+}
+
+function simpleblog_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'story_node_form') {
+    if (strpos($_GET['q'], '/advanced') === FALSE) {
+      $form['#prefix'] = '<div style="text-align: right; margin-bottom: -1em;"><strong>[ ' .
+                         l('Advanced Form', rtrim($_GET['q'], '/') . '/advanced') .
+                         ' ]</strong></div>';
+      $simpleblog_suppress_terms = variable_get('simpleblog_suppress_terms', array());
+      unset($form['revision_information']);
+      foreach($form['body_field']['format'] as $key => $element) {
+        if (is_numeric($key) && $key > 1) {
+          unset($form['body_field']['format'][$key]);
+        }
+      }
+
+      global $user;
+      $form['author']['name']['#value'] = ($form['author']['name']['#default_value'] ? $form['author']['name']['#default_value'] : $user->name);
+      $form['author']['name']['#disabled'] = TRUE;
+      $form['author']['date']['#disabled'] = TRUE;
+      $form['options']['promote']['#disabled'] = TRUE;
+      $form['options']['sticky']['#disabled'] = TRUE;
+  
+      foreach($form['taxonomy'] as $vid => $tax) {
+        if (is_array($tax)) {
+          foreach($tax['#options'] as $tid => $op) {
+            if (is_array($op->option)) {
+              $term_id = reset(array_keys($op->option));
+              if (in_array($term_id, $simpleblog_suppress_terms)) {
+                unset($form['taxonomy'][$vid]['#options'][$tid]);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+?>
