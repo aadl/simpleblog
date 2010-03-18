@@ -54,7 +54,6 @@ function simpleblog_form_alter(&$form, &$form_state, $form_id) {
       global $user;
       $form['author']['name']['#value'] = ($form['author']['name']['#default_value'] ? $form['author']['name']['#default_value'] : $user->name);
       $form['author']['name']['#disabled'] = TRUE;
-      $form['author']['date']['#disabled'] = TRUE;
       $form['options']['promote']['#disabled'] = TRUE;
       $form['options']['sticky']['#disabled'] = TRUE;
   
